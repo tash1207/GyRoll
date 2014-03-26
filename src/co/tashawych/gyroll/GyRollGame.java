@@ -1,9 +1,12 @@
 package co.tashawych.gyroll;
 
 import org.andengine.engine.camera.Camera;
+import org.andengine.engine.handler.IUpdateHandler;
 import org.andengine.engine.options.EngineOptions;
 import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
+import org.andengine.entity.IEntity;
+import org.andengine.entity.modifier.MoveModifier;
 import org.andengine.entity.primitive.Rectangle;
 import org.andengine.entity.scene.IOnSceneTouchListener;
 import org.andengine.entity.scene.Scene;
@@ -23,9 +26,9 @@ import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegion
 import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
 import org.andengine.ui.activity.SimpleBaseGameActivity;
-import org.andengine.util.debug.Debug;
 
 import android.hardware.SensorManager;
+import android.os.Handler;
 import android.widget.Toast;
 
 import com.badlogic.gdx.math.Vector2;
@@ -34,11 +37,7 @@ import com.badlogic.gdx.physics.box2d.BodyDef.BodyType;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 
 /**
- * (c) 2010 Nicolas Gramlich
- * (c) 2011 Zynga
- *
- * @author Nicolas Gramlich
- * @since 18:47:08 - 19.03.2010
+ * Based off of Nicolas Gramlich's AndEngine Physics Example
  */
 public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationListener, IOnSceneTouchListener {
 	// ===========================================================
@@ -54,30 +53,38 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	// Fields
 	// ===========================================================
 
+	// Sphere
 	private BitmapTextureAtlas mBitmapTextureAtlas;
-
 	private ITextureRegion mSphereTextureRegion;
+	
+	// Turret
+	private BitmapTextureAtlas mBitmapTextureAtlasTurret;
+	private ITextureRegion mTurretTextureRegion;
+	
+	private Sprite turret;
+	private boolean turretMovingLeft = true;
+	private float turretX = CAMERA_WIDTH/2;
+	private float turretY = CAMERA_HEIGHT - 72;
 
 	private Scene mScene;
 
 	private PhysicsWorld mPhysicsWorld;
-	private int mFaceCount = 0;
+	private boolean sphereVisible = false;
+	
+    // Handler for callbacks to the UI thread
+    final Handler mHandler = new Handler();
 
-	// ===========================================================
-	// Constructors
-	// ===========================================================
-
-	// ===========================================================
-	// Getter & Setter
-	// ===========================================================
-
-	// ===========================================================
-	// Methods for/from SuperClass/Interfaces
-	// ===========================================================
+    // Create runnable for posting
+    final Runnable mUpdateResults = new Runnable() {
+        public void run() {
+            updateResultsInUi();
+        }
+    };
+	
 
 	@Override
 	public EngineOptions onCreateEngineOptions() {
-		Toast.makeText(this, "Touch the screen to place your sphere.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Touch the screen to start the game.", Toast.LENGTH_LONG).show();
 
 		final Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
 
@@ -87,9 +94,15 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	@Override
 	public void onCreateResources() {
 		BitmapTextureAtlasTextureRegionFactory.setAssetBasePath("gfx/");
+		
+		// Turret
+		this.mBitmapTextureAtlasTurret = new BitmapTextureAtlas(this.getTextureManager(), 123, 180, TextureOptions.BILINEAR);
+		this.mTurretTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlasTurret, this, "Turret.png", 0, 0);
+		this.mBitmapTextureAtlasTurret.load();
 
-		this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 98, 98, TextureOptions.BILINEAR);
-		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, "sphere.png", 0, 0);
+		// Sphere
+		this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 256, 256, TextureOptions.BILINEAR);
+		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, "sphere2.png", 0, 0);
 		this.mBitmapTextureAtlas.load();
 	}
 
@@ -103,11 +116,12 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 		this.mPhysicsWorld = new PhysicsWorld(new Vector2(0, SensorManager.GRAVITY_EARTH), false);
 
+		// Walls
 		final VertexBufferObjectManager vertexBufferObjectManager = this.getVertexBufferObjectManager();
-		final Rectangle ground = new Rectangle(0, CAMERA_HEIGHT - 2, CAMERA_WIDTH * 2, 2, vertexBufferObjectManager);
-		final Rectangle roof = new Rectangle(0, 0, CAMERA_WIDTH * 2, 2, vertexBufferObjectManager);
-		final Rectangle left = new Rectangle(0, 0, 2, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
-		final Rectangle right = new Rectangle(CAMERA_WIDTH - 2, 0, 2, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
+		final Rectangle ground = new Rectangle(0, CAMERA_HEIGHT - 1, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
+		final Rectangle roof = new Rectangle(0, 0, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
+		final Rectangle left = new Rectangle(0, 0, 1, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
+		final Rectangle right = new Rectangle(CAMERA_WIDTH - 1, 0, 1, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
 
 		final FixtureDef wallFixtureDef = PhysicsFactory.createFixtureDef(0, 0.5f, 0.5f);
 		PhysicsFactory.createBoxBody(this.mPhysicsWorld, ground, BodyType.StaticBody, wallFixtureDef);
@@ -119,6 +133,11 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 		this.mScene.attachChild(roof);
 		this.mScene.attachChild(left);
 		this.mScene.attachChild(right);
+		
+		// Turret
+		turret = new Sprite(turretX, turretY, this.mTurretTextureRegion, vertexBufferObjectManager);
+		turret.setScale(0.8f);
+		this.mScene.attachChild(turret);
 
 		this.mScene.registerUpdateHandler(this.mPhysicsWorld);
 
@@ -127,9 +146,11 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 	@Override
 	public boolean onSceneTouchEvent(final Scene pScene, final TouchEvent pSceneTouchEvent) {
-		if(this.mPhysicsWorld != null && mFaceCount == 0) {
+		// Start the game
+		if(this.mPhysicsWorld != null && !sphereVisible) {
 			if(pSceneTouchEvent.isActionDown()) {
-				this.addFace(pSceneTouchEvent.getX(), pSceneTouchEvent.getY());
+				mHandler.post(mUpdateResults);
+				this.placeSphere(pSceneTouchEvent.getX(), pSceneTouchEvent.getY());
 				return true;
 			}
 		}
@@ -143,7 +164,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 	@Override
 	public void onAccelerationChanged(final AccelerationData pAccelerationData) {
-		final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX(), pAccelerationData.getY());
+		final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX(), 0);
 		this.mPhysicsWorld.setGravity(gravity);
 		Vector2Pool.recycle(gravity);
 	}
@@ -161,19 +182,64 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 		this.disableAccelerationSensor();
 	}
+	
+	public void updateResultsInUi() {
+		this.mScene.registerUpdateHandler(new IUpdateHandler() {
+			@Override
+			public void reset() { }
+
+			@Override
+			public void onUpdate(final float pSecondsElapsed) {
+				float newTurretX = turretX;
+				// Turret moves left
+				if (turretMovingLeft && turretX > 50) {
+					newTurretX = turretX - 2;
+				}
+				// If turret is all the way left, move right
+				else if (turretX <= 50)  {
+					turretMovingLeft = false;
+					newTurretX = turretX + 2;
+				}
+				// Turret moves right
+				else if (!turretMovingLeft && turretX <= CAMERA_WIDTH - 54) {
+					newTurretX = turretX + 2;
+				}
+				// If turret is all the way right, move left
+				else if (turretX > CAMERA_WIDTH - 54) {
+					turretMovingLeft = true;
+					newTurretX = turretX - 2;
+				}
+				// Motion for turret
+				turret.registerEntityModifier(new MoveModifier(0.03f,
+						turretX, turretY, newTurretX, turretY) {
+					@Override
+			    	protected void onModifierStarted(IEntity pItem) {
+			        	super.onModifierStarted(pItem);
+					}
+
+			        @Override
+			        protected void onModifierFinished(IEntity pItem) {
+			        	turretX = turret.getX();
+			            super.onModifierFinished(pItem);
+			        }
+				});
+
+			}
+		});
+	}
 
 	// ===========================================================
 	// Methods
 	// ===========================================================
 
-	private void addFace(final float pX, final float pY) {
-		this.mFaceCount++;
-		Debug.d("Faces: " + this.mFaceCount);
+	private void placeSphere(final float pX, final float pY) {
+		this.sphereVisible = true;
 
 		final Sprite sphere;
 		final Body body;
 
-		sphere = new Sprite(pX, pY, this.mSphereTextureRegion, this.getVertexBufferObjectManager());
+		sphere = new Sprite(CAMERA_WIDTH/2, 0, this.mSphereTextureRegion, this.getVertexBufferObjectManager());
+		sphere.setScale(0.4f);
 		body = PhysicsFactory.createCircleBody(this.mPhysicsWorld, sphere, BodyType.DynamicBody, FIXTURE_DEF);
 
 		this.mScene.attachChild(sphere);
