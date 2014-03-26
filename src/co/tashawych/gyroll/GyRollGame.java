@@ -6,7 +6,7 @@ import org.andengine.engine.options.EngineOptions;
 import org.andengine.engine.options.ScreenOrientation;
 import org.andengine.engine.options.resolutionpolicy.RatioResolutionPolicy;
 import org.andengine.entity.IEntity;
-import org.andengine.entity.modifier.MoveModifier;
+import org.andengine.entity.modifier.MoveXModifier;
 import org.andengine.entity.primitive.Rectangle;
 import org.andengine.entity.scene.IOnSceneTouchListener;
 import org.andengine.entity.scene.Scene;
@@ -54,7 +54,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	// ===========================================================
 
 	// Sphere
-	private BitmapTextureAtlas mBitmapTextureAtlas;
+	private BitmapTextureAtlas mBitmapTextureAtlasSphere;
 	private ITextureRegion mSphereTextureRegion;
 	
 	// Turret
@@ -101,9 +101,9 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 		this.mBitmapTextureAtlasTurret.load();
 
 		// Sphere
-		this.mBitmapTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 256, 256, TextureOptions.BILINEAR);
-		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlas, this, "sphere2.png", 0, 0);
-		this.mBitmapTextureAtlas.load();
+		this.mBitmapTextureAtlasSphere = new BitmapTextureAtlas(this.getTextureManager(), 256, 256, TextureOptions.BILINEAR);
+		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlasSphere, this, "sphere2.png", 0, 0);
+		this.mBitmapTextureAtlasSphere.load();
 	}
 
 	@Override
@@ -210,8 +210,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 					newTurretX = turretX - 2;
 				}
 				// Motion for turret
-				turret.registerEntityModifier(new MoveModifier(0.03f,
-						turretX, turretY, newTurretX, turretY) {
+				turret.registerEntityModifier(new MoveXModifier(0.03f, turretX, newTurretX) {
 					@Override
 			    	protected void onModifierStarted(IEntity pItem) {
 			        	super.onModifierStarted(pItem);
