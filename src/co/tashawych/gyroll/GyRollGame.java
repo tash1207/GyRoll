@@ -27,6 +27,8 @@ import org.andengine.opengl.texture.region.ITextureRegion;
 import org.andengine.opengl.vbo.VertexBufferObjectManager;
 import org.andengine.ui.activity.SimpleBaseGameActivity;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.hardware.SensorManager;
 import android.os.Handler;
 import android.widget.Toast;
@@ -44,8 +46,8 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	// Constants
 	// ===========================================================
 
-	private static final int CAMERA_WIDTH = 720;
-	private static final int CAMERA_HEIGHT = 480;
+	protected static final int CAMERA_WIDTH = 720;
+	protected static final int CAMERA_HEIGHT = 480;
 
 	private static final FixtureDef FIXTURE_DEF = PhysicsFactory.createFixtureDef(1, 0.5f, 0.5f);
 
@@ -54,6 +56,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	// ===========================================================
 
 	// Sphere
+	protected Sprite sphere;
 	private BitmapTextureAtlas mBitmapTextureAtlasSphere;
 	private ITextureRegion mSphereTextureRegion;
 	
@@ -65,11 +68,15 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	private boolean turretMovingLeft = true;
 	private float turretX = CAMERA_WIDTH/2;
 	private float turretY = CAMERA_HEIGHT - 72;
+	
+	Laser laser;
 
 	private Scene mScene;
 
 	private PhysicsWorld mPhysicsWorld;
 	private boolean sphereVisible = false;
+	
+	protected boolean gameOver = false;
 	
     // Handler for callbacks to the UI thread
     final Handler mHandler = new Handler();
@@ -78,6 +85,12 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
     final Runnable mUpdateResults = new Runnable() {
         public void run() {
             updateResultsInUi();
+        }
+    };
+    
+    final Runnable mFinishGame = new Runnable() {
+        public void run() {
+            finishGame();
         }
     };
 	
@@ -151,6 +164,14 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 			if(pSceneTouchEvent.isActionDown()) {
 				mHandler.post(mUpdateResults);
 				this.placeSphere(pSceneTouchEvent.getX(), pSceneTouchEvent.getY());
+				
+				BitmapTextureAtlas mBitmapTextureAtlasLaser = new BitmapTextureAtlas(this.getTextureManager(), 74, 290, TextureOptions.BILINEAR);
+				ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlasLaser, this, "greenLaserRay.png", 0, 0);
+				mBitmapTextureAtlasLaser.load();
+								
+				laser = new Laser(CAMERA_WIDTH/2, CAMERA_HEIGHT - 80, mLaserTextureRegion, this.getVertexBufferObjectManager());
+				laser.setScale(0.2f);
+				mScene.attachChild(laser);
 				return true;
 			}
 		}
@@ -190,6 +211,12 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 			@Override
 			public void onUpdate(final float pSecondsElapsed) {
+				if (gameOver) return;
+				
+				if (sphere.collidesWith(laser)) {
+					mHandler.post(mFinishGame);
+					return;
+				}
 				float newTurretX = turretX;
 				// Turret moves left
 				if (turretMovingLeft && turretX > 50) {
@@ -234,15 +261,32 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	private void placeSphere(final float pX, final float pY) {
 		this.sphereVisible = true;
 
-		final Sprite sphere;
 		final Body body;
 
 		sphere = new Sprite(CAMERA_WIDTH/2, 0, this.mSphereTextureRegion, this.getVertexBufferObjectManager());
 		sphere.setScale(0.4f);
+		sphere.setUserData("sphere");
 		body = PhysicsFactory.createCircleBody(this.mPhysicsWorld, sphere, BodyType.DynamicBody, FIXTURE_DEF);
 
 		this.mScene.attachChild(sphere);
 		this.mPhysicsWorld.registerPhysicsConnector(new PhysicsConnector(sphere, body, true, true));
+	}
+	
+	protected void finishGame() {
+		gameOver = true;
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage("GAME OVER");
+        builder.setCancelable(false);
+        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface dialog, int arg1) {
+                        dialog.dismiss();
+                        finish();
+                }
+        });
+        AlertDialog dialog = builder.create();
+        dialog.show();
 	}
 
 }
