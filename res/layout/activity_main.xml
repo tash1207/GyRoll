@@ -6,22 +6,27 @@
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
+    android:background="@drawable/main_background"
     tools:context=".MainActivity" >
     
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:text="@string/app_name"
-        android:textSize="48dp" />
+        
+        android:textSize="48dp" 
+        android:textColor="#FF0000"/>
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_alignParentRight="true"
+        android:layout_centerVertical="true"
+        android:background="#ffffff"
+        android:onClick="btnPlayClicked"
         android:paddingLeft="20dp"
         android:paddingRight="20dp"
         android:text="@string/play"
-        android:onClick="btnPlayClicked" />
+        android:textSize="35dp" />
 
 </RelativeLayout>
