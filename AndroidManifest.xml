@@ -24,6 +24,7 @@
             </intent-filter>
         </activity>
         <activity android:name="co.tashawych.gyroll.GyRollGame" />
+        <activity android:name="co.tashawych.gyroll.InstructionsActivity"/>
     </application>
 
 </manifest>
