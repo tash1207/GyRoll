@@ -13,9 +13,14 @@ public class InstructionsActivity extends Activity {
 		setContentView(R.layout.activity_instructions);
 	}
 	
-	public void btnPlayClickedInstructions(View v) {
+	public void btnBackClicked(View v) {
+		finish();
+	}
+	
+	public void btnContinueClicked(View v) {
 		Intent playGame = new Intent(this, GyRollGame.class);
 		startActivity(playGame);
+		finish();
 	}
 
 }

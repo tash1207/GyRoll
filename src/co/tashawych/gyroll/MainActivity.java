@@ -15,8 +15,13 @@ public class MainActivity extends Activity {
 	}
 	
 	public void btnPlayClicked(View v) {
-		Intent playGame = new Intent(this, InstructionsActivity.class);
+		Intent playGame = new Intent(this, GyRollGame.class);
 		startActivity(playGame);
+	}
+	
+	public void btnInstructionsClicked(View v) {
+		Intent instructions = new Intent(this, InstructionsActivity.class);
+		startActivity(instructions);
 	}
 
 	@Override

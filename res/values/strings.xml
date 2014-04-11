@@ -4,5 +4,9 @@
     <string name="app_name">GyRoll</string>
     <string name="action_settings">Settings</string>
     <string name="play">Play</string>
-
+    <string name="instructions">Instructions</string>
+    <string name="instructions_text">This is a survival game. Survive as long as you can by tilting your phone to avoid getting hit by lazers. May the force be with you!</string>
+	<string name="back_btn">Back</string>
+	<string name="continue_btn">Continue</string>
+    
 </resources>
