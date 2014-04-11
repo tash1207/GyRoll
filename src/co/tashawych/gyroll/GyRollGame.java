@@ -185,7 +185,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 	@Override
 	public void onAccelerationChanged(final AccelerationData pAccelerationData) {
-		final Vector2 gravity = Vector2Pool.obtain(pAccelerationData.getX(), 0);
+		final Vector2 gravity = Vector2Pool.obtain(2f*pAccelerationData.getX(), 0);
 		this.mPhysicsWorld.setGravity(gravity);
 		Vector2Pool.recycle(gravity);
 	}
