@@ -30,6 +30,7 @@ import org.andengine.ui.activity.SimpleBaseGameActivity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.hardware.SensorManager;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.widget.Toast;
 
@@ -76,6 +77,9 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 	private PhysicsWorld mPhysicsWorld;
 	private boolean sphereVisible = false;
+	
+	CountDownTimer timer;
+	protected static int gameLevel = 1;
 	
 	protected boolean gameOver = false;
 	
@@ -175,6 +179,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 				laser = new Laser(turretX, turretY - 92, mLaserTextureRegion, this.getVertexBufferObjectManager());
 				laser.setScale(0.2f);
 				mScene.attachChild(laser);
+				
 				return true;
 			}
 		}
@@ -208,6 +213,19 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	}
 	
 	public void updateResultsInUi() {
+		gameLevel = 1;
+		// Start a timer that increases the "game level" every 4 seconds
+		timer = new CountDownTimer(60000, 4000) {
+			public void onTick(long millisUntilFinished) {
+				gameLevel++;
+			}
+			
+			public void onFinish() {
+				mHandler.post(mFinishGame);
+			}
+		};
+		timer.start();
+		
 		this.mScene.registerUpdateHandler(new IUpdateHandler() {
 			@Override
 			public void reset() { }
@@ -217,10 +235,12 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 				if (gameOver) return;
 				
 				if (sphere.collidesWith(laser)) {
+					gameOver = true;
 					mHandler.post(mFinishGame);
 					return;
 				}
 				if (laserDone) {
+					mScene.detachChild(laser);
 					BitmapTextureAtlas mBitmapTextureAtlasLaser = new BitmapTextureAtlas(getTextureManager(), 74, 290, TextureOptions.BILINEAR);
 					ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlasLaser, GyRollGame.this, "greenLaserRay.png", 0, 0);
 					mBitmapTextureAtlasLaser.load();
@@ -251,7 +271,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 					newTurretX = turretX - 2;
 				}
 				// Motion for turret
-				turret.registerEntityModifier(new MoveXModifier(0.03f, turretX, newTurretX) {
+				turret.registerEntityModifier(new MoveXModifier(0.03f - 0.0015f*gameLevel, turretX, newTurretX) {
 					@Override
 			    	protected void onModifierStarted(IEntity pItem) {
 			        	super.onModifierStarted(pItem);
@@ -263,7 +283,6 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 			            super.onModifierFinished(pItem);
 			        }
 				});
-
 			}
 		});
 	}
@@ -287,9 +306,14 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	}
 	
 	protected void finishGame() {
-		gameOver = true;
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setMessage("GAME OVER");
+		if (gameOver) {
+			builder.setMessage("GAME OVER");
+		}
+		else {
+			builder.setMessage("You win! You lasted 60 seconds in the arena");
+			gameOver = true;
+		}
         builder.setCancelable(false);
         builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 

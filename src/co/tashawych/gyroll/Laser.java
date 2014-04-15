@@ -7,7 +7,7 @@ import org.andengine.opengl.vbo.VertexBufferObjectManager;
 
 public class Laser extends Sprite {
 	private final PhysicsHandler mPhysicsHandler;
-	private final float VELOCITY = 100.0f;
+	private float VELOCITY = 100.0f;
 	
 	public Laser(final float x, final float y, final ITextureRegion textureRegion, 
 			VertexBufferObjectManager manager) {
@@ -15,13 +15,13 @@ public class Laser extends Sprite {
         this.mPhysicsHandler = new PhysicsHandler(this);
         this.registerUpdateHandler(this.mPhysicsHandler);
         this.setUserData("laser");
+        VELOCITY = 100.0f + GyRollGame.gameLevel * 8.5f;
 	}
 	
     @Override
-    protected void onManagedUpdate(final float pSecondsElapsed) {    	
+    protected void onManagedUpdate(final float pSecondsElapsed) {
 		if (this.mY < 0) {
 			GyRollGame.laserDone = true;
-			this.detachSelf();
 		} else {
 			this.mPhysicsHandler.setVelocityY(-VELOCITY);
 		}
