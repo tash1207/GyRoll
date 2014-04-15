@@ -19,12 +19,12 @@ public class Laser extends Sprite {
 	
     @Override
     protected void onManagedUpdate(final float pSecondsElapsed) {    	
-        if (this.mY < 0) {
-        	this.mPhysicsHandler.setVelocityY(VELOCITY);
-        }
-        else if (this.mY > GyRollGame.CAMERA_HEIGHT - 90) {
-        	this.mPhysicsHandler.setVelocityY(-VELOCITY);
-        }
+		if (this.mY < 0) {
+			GyRollGame.laserDone = true;
+			this.detachSelf();
+		} else {
+			this.mPhysicsHandler.setVelocityY(-VELOCITY);
+		}
 
         super.onManagedUpdate(pSecondsElapsed);
     }

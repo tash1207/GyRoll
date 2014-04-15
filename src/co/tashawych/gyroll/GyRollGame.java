@@ -70,6 +70,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	private float turretY = CAMERA_HEIGHT - 72;
 	
 	Laser laser;
+	protected static boolean laserDone = false;
 
 	private Scene mScene;
 
@@ -164,12 +165,14 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 			if(pSceneTouchEvent.isActionDown()) {
 				mHandler.post(mUpdateResults);
 				this.placeSphere(pSceneTouchEvent.getX(), pSceneTouchEvent.getY());
-				
-				BitmapTextureAtlas mBitmapTextureAtlasLaser = new BitmapTextureAtlas(this.getTextureManager(), 74, 290, TextureOptions.BILINEAR);
-				ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlasLaser, this, "greenLaserRay.png", 0, 0);
+
+				BitmapTextureAtlas mBitmapTextureAtlasLaser = new BitmapTextureAtlas(
+						this.getTextureManager(), 74, 290, TextureOptions.BILINEAR);
+				ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory
+						.createFromAsset(mBitmapTextureAtlasLaser, this, "greenLaserRay.png", 0, 0);
 				mBitmapTextureAtlasLaser.load();
-								
-				laser = new Laser(CAMERA_WIDTH/2, CAMERA_HEIGHT - 80, mLaserTextureRegion, this.getVertexBufferObjectManager());
+
+				laser = new Laser(turretX, turretY - 92, mLaserTextureRegion, this.getVertexBufferObjectManager());
 				laser.setScale(0.2f);
 				mScene.attachChild(laser);
 				return true;
@@ -216,6 +219,17 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 				if (sphere.collidesWith(laser)) {
 					mHandler.post(mFinishGame);
 					return;
+				}
+				if (laserDone) {
+					BitmapTextureAtlas mBitmapTextureAtlasLaser = new BitmapTextureAtlas(getTextureManager(), 74, 290, TextureOptions.BILINEAR);
+					ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlasLaser, GyRollGame.this, "greenLaserRay.png", 0, 0);
+					mBitmapTextureAtlasLaser.load();
+
+					laser = new Laser(turretX, turretY - 92, mLaserTextureRegion, getVertexBufferObjectManager());
+					laser.setScale(0.2f);
+					mScene.attachChild(laser);
+
+					laserDone = false;
 				}
 				float newTurretX = turretX;
 				// Turret moves left
