@@ -12,6 +12,7 @@ import org.andengine.entity.scene.IOnSceneTouchListener;
 import org.andengine.entity.scene.Scene;
 import org.andengine.entity.scene.background.Background;
 import org.andengine.entity.sprite.Sprite;
+import org.andengine.entity.text.Text;
 import org.andengine.entity.util.FPSLogger;
 import org.andengine.extension.physics.box2d.PhysicsConnector;
 import org.andengine.extension.physics.box2d.PhysicsFactory;
@@ -20,6 +21,7 @@ import org.andengine.extension.physics.box2d.util.Vector2Pool;
 import org.andengine.input.sensor.acceleration.AccelerationData;
 import org.andengine.input.sensor.acceleration.IAccelerationListener;
 import org.andengine.input.touch.TouchEvent;
+import org.andengine.opengl.font.Font;
 import org.andengine.opengl.texture.TextureOptions;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlas;
 import org.andengine.opengl.texture.atlas.bitmap.BitmapTextureAtlasTextureRegionFactory;
@@ -29,6 +31,8 @@ import org.andengine.ui.activity.SimpleBaseGameActivity;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.hardware.SensorManager;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -68,7 +72,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	private Sprite turret;
 	private boolean turretMovingLeft = true;
 	private float turretX = CAMERA_WIDTH/2;
-	private float turretY = CAMERA_HEIGHT - 72;
+	private float turretY = CAMERA_HEIGHT - 110;
 	
 	Laser laser;
 	protected static boolean laserDone = false;
@@ -80,6 +84,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	
 	CountDownTimer timer;
 	protected static int gameLevel = 1;
+	Text textTime;
 	
 	protected boolean gameOver = false;
 	
@@ -102,7 +107,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 	@Override
 	public EngineOptions onCreateEngineOptions() {
-		Toast.makeText(this, "Touch the screen to start the game.", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Touch the screen to start the game.", Toast.LENGTH_SHORT).show();
 
 		final Camera camera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
 
@@ -119,8 +124,8 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 		this.mBitmapTextureAtlasTurret.load();
 
 		// Sphere
-		this.mBitmapTextureAtlasSphere = new BitmapTextureAtlas(this.getTextureManager(), 256, 256, TextureOptions.BILINEAR);
-		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlasSphere, this, "sphere2.png", 0, 0);
+		this.mBitmapTextureAtlasSphere = new BitmapTextureAtlas(this.getTextureManager(), 512, 512, TextureOptions.BILINEAR);
+		this.mSphereTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(this.mBitmapTextureAtlasSphere, this, "sphere3.png", 0, 0);
 		this.mBitmapTextureAtlasSphere.load();
 	}
 
@@ -136,10 +141,10 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 
 		// Walls
 		final VertexBufferObjectManager vertexBufferObjectManager = this.getVertexBufferObjectManager();
-		final Rectangle ground = new Rectangle(0, CAMERA_HEIGHT - 1, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
-		final Rectangle roof = new Rectangle(0, 0, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
-		final Rectangle left = new Rectangle(0, 0, 1, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
-		final Rectangle right = new Rectangle(CAMERA_WIDTH - 1, 0, 1, CAMERA_HEIGHT * 2, vertexBufferObjectManager);
+		final Rectangle roof = new Rectangle(0, CAMERA_HEIGHT - 50, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
+		final Rectangle ground = new Rectangle(0, 0, CAMERA_WIDTH * 2, 1, vertexBufferObjectManager);
+		final Rectangle left = new Rectangle(0, 0, 1, CAMERA_HEIGHT * 2 - 100, vertexBufferObjectManager);
+		final Rectangle right = new Rectangle(CAMERA_WIDTH - 1, 0, 1, CAMERA_HEIGHT * 2 - 100, vertexBufferObjectManager);
 
 		final FixtureDef wallFixtureDef = PhysicsFactory.createFixtureDef(0, 0.5f, 0.5f);
 		PhysicsFactory.createBoxBody(this.mPhysicsWorld, ground, BodyType.StaticBody, wallFixtureDef);
@@ -152,9 +157,20 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 		this.mScene.attachChild(left);
 		this.mScene.attachChild(right);
 		
+		BitmapTextureAtlas fontTextureAtlas = new BitmapTextureAtlas(this.getTextureManager(), 1024, 1024, 
+				TextureOptions.BILINEAR_PREMULTIPLYALPHA);
+		fontTextureAtlas.load();
+		Font font = new Font(getFontManager(), fontTextureAtlas,Typeface.DEFAULT,45f,true,Color.WHITE);
+		getEngine().getFontManager().loadFont(font);
+		
+		Text textScore = new Text(100, 450, font, "Score: ", vertexBufferObjectManager);
+		this.mScene.attachChild(textScore);
+		textTime = new Text(200, 450, font, "00", vertexBufferObjectManager);
+		this.mScene.attachChild(textTime);
+		
 		// Turret
 		turret = new Sprite(turretX, turretY, this.mTurretTextureRegion, vertexBufferObjectManager);
-		turret.setScale(0.8f);
+		turret.setScale(0.7f);
 		this.mScene.attachChild(turret);
 
 		this.mScene.registerUpdateHandler(this.mPhysicsWorld);
@@ -176,7 +192,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 						.createFromAsset(mBitmapTextureAtlasLaser, this, "greenLaserRay.png", 0, 0);
 				mBitmapTextureAtlasLaser.load();
 
-				laser = new Laser(turretX, turretY - 92, mLaserTextureRegion, this.getVertexBufferObjectManager());
+				laser = new Laser(turretX, turretY - 85, mLaserTextureRegion, this.getVertexBufferObjectManager());
 				laser.setScale(0.2f);
 				mScene.attachChild(laser);
 				
@@ -213,14 +229,16 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	}
 	
 	public void updateResultsInUi() {
-		gameLevel = 1;
-		// Start a timer that increases the "game level" every 4 seconds
-		timer = new CountDownTimer(60000, 4000) {
+		gameLevel = 0;
+		// Start a timer that increases the "game level" every second
+		timer = new CountDownTimer(60000, 1000) {
 			public void onTick(long millisUntilFinished) {
 				gameLevel++;
+				textTime.setText(String.valueOf((60000 - millisUntilFinished)/1000 + 1));
 			}
 			
 			public void onFinish() {
+				textTime.setText("60");
 				mHandler.post(mFinishGame);
 			}
 		};
@@ -245,33 +263,33 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 					ITextureRegion mLaserTextureRegion = BitmapTextureAtlasTextureRegionFactory.createFromAsset(mBitmapTextureAtlasLaser, GyRollGame.this, "greenLaserRay.png", 0, 0);
 					mBitmapTextureAtlasLaser.load();
 
-					laser = new Laser(turretX, turretY - 92, mLaserTextureRegion, getVertexBufferObjectManager());
-					laser.setScale(0.2f);
+					laser = new Laser(turretX, turretY - 85, mLaserTextureRegion, getVertexBufferObjectManager());
+					laser.setScale(0.18f);
 					mScene.attachChild(laser);
 
 					laserDone = false;
 				}
 				float newTurretX = turretX;
 				// Turret moves left
-				if (turretMovingLeft && turretX > 50) {
+				if (turretMovingLeft && turretX > 42) {
 					newTurretX = turretX - 2;
 				}
 				// If turret is all the way left, move right
-				else if (turretX <= 50)  {
+				else if (turretX <= 42)  {
 					turretMovingLeft = false;
 					newTurretX = turretX + 2;
 				}
 				// Turret moves right
-				else if (!turretMovingLeft && turretX <= CAMERA_WIDTH - 54) {
+				else if (!turretMovingLeft && turretX <= CAMERA_WIDTH - 48) {
 					newTurretX = turretX + 2;
 				}
 				// If turret is all the way right, move left
-				else if (turretX > CAMERA_WIDTH - 54) {
+				else if (turretX > CAMERA_WIDTH - 48) {
 					turretMovingLeft = true;
 					newTurretX = turretX - 2;
 				}
 				// Motion for turret
-				turret.registerEntityModifier(new MoveXModifier(0.03f - 0.0015f*gameLevel, turretX, newTurretX) {
+				turret.registerEntityModifier(new MoveXModifier(0.03f - 0.0015f*(gameLevel/4), turretX, newTurretX) {
 					@Override
 			    	protected void onModifierStarted(IEntity pItem) {
 			        	super.onModifierStarted(pItem);
@@ -297,7 +315,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 		final Body body;
 
 		sphere = new Sprite(CAMERA_WIDTH/2, 0, this.mSphereTextureRegion, this.getVertexBufferObjectManager());
-		sphere.setScale(0.4f);
+		sphere.setScale(0.2f);
 		sphere.setUserData("sphere");
 		body = PhysicsFactory.createCircleBody(this.mPhysicsWorld, sphere, BodyType.DynamicBody, FIXTURE_DEF);
 
@@ -308,6 +326,7 @@ public class GyRollGame extends SimpleBaseGameActivity implements IAccelerationL
 	protected void finishGame() {
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		if (gameOver) {
+			timer.cancel();
 			builder.setMessage("GAME OVER");
 		}
 		else {

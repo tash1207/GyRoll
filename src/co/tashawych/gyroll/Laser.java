@@ -15,7 +15,7 @@ public class Laser extends Sprite {
         this.mPhysicsHandler = new PhysicsHandler(this);
         this.registerUpdateHandler(this.mPhysicsHandler);
         this.setUserData("laser");
-        VELOCITY = 100.0f + GyRollGame.gameLevel * 8.5f;
+        VELOCITY = 100.0f + GyRollGame.gameLevel * 2.5f;
 	}
 	
     @Override
